@@ -7,29 +7,28 @@ package ce.itcr.com.airwarremote;
 import android.os.StrictMode;
 import android.util.Log;
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.Socket;
 
 
-public class TCPClient {
+class TCPClient {
 
     private String serverMessage;
-    public static String SERVERIP;
-    public static final int SERVERPORT = 8085;
+    static String SERVERIP;
+    private static final int SERVERPORT = 8085;
     private OnMessageReceived mMessageListener = null;
     private boolean mRun = false;
-    int SDK_INT = android.os.Build.VERSION.SDK_INT;
-    PrintWriter writer;
-    BufferedReader in;
+    private int SDK_INT = android.os.Build.VERSION.SDK_INT;
+    private DataOutputStream writer;
+    private BufferedReader in;
 
     /**
      *  Constructor of the class. OnMessagedReceived listens for the messages received from server
      */
-    public TCPClient(OnMessageReceived listener) {
+    TCPClient(OnMessageReceived listener) {
         mMessageListener = listener;
     }
 
@@ -37,30 +36,33 @@ public class TCPClient {
      * Sends the message entered by client to the server
      * @param message text entered by client
      */
-    public void sendMessage(String message){
+    void sendMessage(int message){
         if (SDK_INT > 8) {
             StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
                     .permitAll().build();
             StrictMode.setThreadPolicy(policy);
-
+        }
+        try{
+            if (writer != null) {
+                writer.writeInt(message);
+                writer.flush();
+            }
+        /*else{
             if (writer != null && !writer.checkError()) {
                 writer.println(message);
                 writer.flush();
             }
-        }
-        else{
-            if (writer != null && !writer.checkError()) {
-                writer.println(message);
-                writer.flush();
-            }
-        }
+        }*/
+    }catch (IOException e){
+            System.out.print("error en entero");
+    }
     }
 
     public void stopClient(){
         mRun = false;
     }
 
-    public void run() {
+    void run() {
 
         mRun = true;
 
@@ -70,12 +72,11 @@ public class TCPClient {
             Log.e("TCP Client", "C: Connecting...");
 
             //create a socket to make the connection with the server
-            Socket socket = new Socket(serverAddr, SERVERPORT);
 
-            try {
+            try (Socket socket = new Socket(serverAddr, SERVERPORT)) {
 
                 //send the message to the server
-                writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
+                writer = new DataOutputStream(socket.getOutputStream());
 
                 Log.e("TCP Client", "C: Sent.");
 
@@ -102,11 +103,10 @@ public class TCPClient {
 
                 Log.e("TCP", "S: Error", e);
 
-            } finally {
-                //the socket must be closed. It is not possible to reconnect to this socket
-                // after it is closed, which means a new socket instance has to be created.
-                socket.close();
             }
+            //the socket must be closed. It is not possible to reconnect to this socket
+            // after it is closed, which means a new socket instance has to be created.
+
 
         } catch (Exception e) {
 
@@ -117,7 +117,7 @@ public class TCPClient {
     }
 
     //Declare the interface. The method messageReceived(String message) will must be implemented
-    public interface OnMessageReceived {
+    interface OnMessageReceived {
         void messageReceived(String message);
     }
 }
