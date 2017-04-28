@@ -17,7 +17,6 @@ import java.net.Socket;
 class TCPClient {
 
     private String serverMessage;
-    static String SERVERIP;
     private static final int SERVERPORT = 8085;
     private OnMessageReceived mMessageListener = null;
     private boolean mRun = false;
@@ -62,7 +61,7 @@ class TCPClient {
         mRun = false;
     }
 
-    void run() {
+    void run(String SERVERIP) {
 
         mRun = true;
 
